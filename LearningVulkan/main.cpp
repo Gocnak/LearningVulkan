@@ -39,7 +39,6 @@ VkResult CreateDebugReportCallbackEXT(VkInstance instance,
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 }
-
 void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator)
 {
     auto func = (PFN_vkDestroyDebugReportCallbackEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
@@ -48,6 +47,17 @@ void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT
         func(instance, callback, pAllocator);
     }
 }
+
+
+struct QueueFamilyIndicies
+{
+    int graphicsFamily = -1;
+
+    bool isComplete() const
+    {
+        return graphicsFamily > -1;
+    }
+};
 
 
 class HelloTriangleApplication
@@ -70,6 +80,8 @@ private:
     VkInstance instance;
     VkDebugReportCallbackEXT callback;
     VkPhysicalDevice physicalDevice;
+    VkDevice logicalDevice;
+    VkQueue graphicsQueue;
 
     void initWindow()
     {
@@ -84,6 +96,49 @@ private:
         createInstance();
         setupDebugCallback();
         pickPhysicalDevice();
+        createLogicalDevice();
+    }
+
+    void createLogicalDevice()
+    {
+        QueueFamilyIndicies indices = findQueueFamilies(physicalDevice);
+
+        VkDeviceQueueCreateInfo queueCreateInfo = {};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+        queueCreateInfo.queueCount = 1;
+
+        float queuePriority = 1.0f;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        VkPhysicalDeviceFeatures deviceFeatures = {};
+
+        VkDeviceCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+        createInfo.pQueueCreateInfos = &queueCreateInfo;
+        createInfo.queueCreateInfoCount = 1;
+
+        createInfo.pEnabledFeatures = &deviceFeatures;
+
+        createInfo.enabledExtensionCount = 0;
+
+        if (g_bEnableValidationLayers)
+        {
+            createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+            createInfo.ppEnabledLayerNames = validationLayers.data();
+        }
+        else
+        {
+            createInfo.enabledLayerCount = 0;
+        }
+
+        if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &logicalDevice) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create logical device!");
+        }
+
+        vkGetDeviceQueue(logicalDevice, indices.graphicsFamily, 0, &graphicsQueue);
     }
 
     void pickPhysicalDevice()
@@ -128,16 +183,6 @@ private:
 
         return indices.isComplete();
     }
-
-    struct QueueFamilyIndicies
-    {
-        int graphicsFamily = -1;
-
-        bool isComplete() const
-        {
-            return graphicsFamily > -1;
-        }
-    };
 
     QueueFamilyIndicies findQueueFamilies(VkPhysicalDevice device)
     {
@@ -341,6 +386,8 @@ private:
 
     void cleanup()
     {
+        vkDestroyDevice(logicalDevice, nullptr);
+
         if (g_bEnableValidationLayers)
         {
             DestroyDebugReportCallbackEXT(instance, callback, nullptr);
