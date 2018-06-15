@@ -53,7 +53,7 @@ void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT
 class HelloTriangleApplication
 {
 public:
-    HelloTriangleApplication(): window(nullptr), instance(nullptr)
+    HelloTriangleApplication(): window(nullptr), instance(nullptr), callback(0), physicalDevice(VK_NULL_HANDLE)
     {
     }
 
@@ -69,6 +69,7 @@ private:
     GLFWwindow *window;
     VkInstance instance;
     VkDebugReportCallbackEXT callback;
+    VkPhysicalDevice physicalDevice;
 
     void initWindow()
     {
@@ -82,6 +83,89 @@ private:
     {
         createInstance();
         setupDebugCallback();
+        pickPhysicalDevice();
+    }
+
+    void pickPhysicalDevice()
+    {
+        uint32_t deviceCount = 0;
+        vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+        if (deviceCount == 0)
+        {
+            throw std::runtime_error("Failed to find GPUs with Vulkan Support!");
+        }
+
+        std::vector<VkPhysicalDevice> devices(deviceCount);
+        vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+        for (const auto &device : devices)
+        {
+            if (isDeviceSuitable(device))
+            {
+                physicalDevice = device;
+                break;
+            }
+        }
+
+        if (physicalDevice == VK_NULL_HANDLE)
+        {
+            throw std::runtime_error("Failed to find a suitable GPU!");
+        }
+    }
+
+    bool isDeviceSuitable(VkPhysicalDevice device)
+    {
+        // The below is an example check to see if the device is a dedicated discrete card and has geometry shading
+        /*VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+        VkPhysicalDeviceFeatures deviceFeatures;
+        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+        return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && deviceFeatures.geometryShader;*/
+        QueueFamilyIndicies indices = findQueueFamilies(device);
+
+        return indices.isComplete();
+    }
+
+    struct QueueFamilyIndicies
+    {
+        int graphicsFamily = -1;
+
+        bool isComplete() const
+        {
+            return graphicsFamily > -1;
+        }
+    };
+
+    QueueFamilyIndicies findQueueFamilies(VkPhysicalDevice device)
+    {
+        QueueFamilyIndicies indices;
+
+        uint32_t queueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+        int i = 0;
+        for (const auto& queueFamily : queueFamilies)
+        {
+            if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            {
+                indices.graphicsFamily = i;
+            }
+
+            if (indices.isComplete())
+            {
+                break;
+            }
+
+            i++;
+        }
+
+        return indices;
     }
 
     void setupDebugCallback()
