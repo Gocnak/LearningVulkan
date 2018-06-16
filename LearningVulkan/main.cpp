@@ -131,7 +131,7 @@ struct Vertex
 };
 
 const std::vector<Vertex> vertices = {
-    { { 0.0f, -0.5f },{ 1.0f, 0.0f, 0.0f } },
+    { { 0.0f, -0.5f },{ 1.0f, 1.0f, 1.0f } },
     { { 0.5f, 0.5f },{ 0.0f, 1.0f, 0.0f } },
     { { -0.5f, 0.5f },{ 0.0f, 0.0f, 1.0f } }
 };
@@ -182,6 +182,9 @@ private:
     std::vector<VkFence> inFlightFences;
     size_t currentFrame;
 
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexBufferMemory;
+
     void initWindow()
     {
         glfwInit();
@@ -203,8 +206,57 @@ private:
         createGraphicsPipeline();
         createFramebuffers();
         createCommandPool();
+        createVertexBuffer();
         createCommandBuffers();
         createSyncObjects();
+    }
+
+    void createVertexBuffer()
+    {
+        VkBufferCreateInfo bufferInfo = {};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = sizeof(vertices[0]) * vertices.size();
+        bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        if (vkCreateBuffer(logicalDevice, &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create vertex buffer!");
+        }
+
+        VkMemoryRequirements memRequirements;
+        vkGetBufferMemoryRequirements(logicalDevice, vertexBuffer, &memRequirements);
+
+        VkMemoryAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memRequirements.size;
+        allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to allocate vertex buffer memory!");
+        }
+
+        vkBindBufferMemory(logicalDevice, vertexBuffer, vertexBufferMemory, 0);
+
+        void* data;
+        vkMapMemory(logicalDevice, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
+        memcpy(data, vertices.data(), (size_t) bufferInfo.size);
+        vkUnmapMemory(logicalDevice, vertexBufferMemory);
+    }
+
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
+    {
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+        {
+            if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                return i;
+        }
+
+        throw std::runtime_error("Failed to find suitible memory type!");
     }
 
     void createSyncObjects()
@@ -273,7 +325,11 @@ private:
 
             vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-            vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+            VkBuffer vertexBuffers[] = {vertexBuffer};
+            VkDeviceSize offsets[] = {0};
+            vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+
+            vkCmdDraw(commandBuffers[i], vertices.size(), 1, 0, 0);
 
             vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -1152,6 +1208,9 @@ private:
     void cleanup()
     {
         cleanupSwapChain();
+
+        vkDestroyBuffer(logicalDevice, vertexBuffer, nullptr);
+        vkFreeMemory(logicalDevice, vertexBufferMemory, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
