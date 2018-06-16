@@ -76,7 +76,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Nick\Documents\Visual Studio 2017\Libs\glm;C:\Users\Nick\Documents\Visual Studio 2017\Libs\glfw-3.2.1.bin.WIN32\include;C:\VulkanSDK\1.1.73.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Nick\Documents\Visual Studio 2017\Libs\stb-master;C:\Users\Nick\Documents\Visual Studio 2017\Libs\glm;C:\Users\Nick\Documents\Visual Studio 2017\Libs\glfw-3.2.1.bin.WIN32\include;C:\VulkanSDK\1.1.73.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.1.73.0\Lib32;C:\Users\Nick\Documents\Visual Studio 2017\Libs\glfw-3.2.1.bin.WIN32\lib-vc2015;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -99,7 +99,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Nick\Documents\Visual Studio 2017\Libs\glm;C:\Users\Nick\Documents\Visual Studio 2017\Libs\glfw-3.2.1.bin.WIN32\include;C:\VulkanSDK\1.1.73.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Nick\Documents\Visual Studio 2017\Libs\stb-master;C:\Users\Nick\Documents\Visual Studio 2017\Libs\glm;C:\Users\Nick\Documents\Visual Studio 2017\Libs\glfw-3.2.1.bin.WIN32\include;C:\VulkanSDK\1.1.73.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
