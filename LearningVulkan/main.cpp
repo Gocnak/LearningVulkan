@@ -26,8 +26,8 @@
 #define WIDTH 800
 #define HEIGHT 600
 
-#define MODEL_PATH "models/chalet.obj"
-#define TEXTURE_PATH "textures/chalet.jpg"
+const std::string MODEL_PATH = "models/chalet.obj";
+const std::string TEXTURE_PATH = "textures/chalet.jpg";
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
@@ -269,11 +269,11 @@ private:
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
-        std::string err;
+        std::string warn, err;
 
-        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, MODEL_PATH))
+        if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str()))
         {
-            throw std::runtime_error(err);
+            throw std::runtime_error(warn + err);
         }
 
         for (const auto &shape : shapes)
@@ -408,7 +408,7 @@ private:
     void createTextureImage()
     {
         int texWidth, texHeight, texChannels;
-        stbi_uc *pixels = stbi_load(TEXTURE_PATH, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        stbi_uc *pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
 
         if (!pixels)
