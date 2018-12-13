@@ -12,10 +12,8 @@
 #include <array>
 #include <chrono>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "MDLReader.h"
+#include "Vertex.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -110,49 +108,38 @@ struct SwapChainSupportDetails
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-struct Vertex
+VkVertexInputBindingDescription Vertex::getBindingDescription()
 {
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 texCoord;
+    VkVertexInputBindingDescription desc = {};
+    desc.binding = 0;
+    desc.stride = sizeof(Vertex);
+    desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-    static VkVertexInputBindingDescription getBindingDescription()
-    {
-        VkVertexInputBindingDescription desc = {};
-        desc.binding = 0;
-        desc.stride = sizeof(Vertex);
-        desc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    return desc;
+}
 
-        return desc;
-    }
+std::array<VkVertexInputAttributeDescription, 3> Vertex::getAttributeDescriptions()
+{
+    std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
 
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
-    {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions = {};
+    attributeDescriptions[0].binding = 0;
+    attributeDescriptions[0].location = 0;
+    attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
-        attributeDescriptions[0].binding = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
+    attributeDescriptions[1].binding = 0;
+    attributeDescriptions[1].location = 1;
+    attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attributeDescriptions[1].offset = offsetof(Vertex, color);
 
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
+    attributeDescriptions[2].binding = 0;
+    attributeDescriptions[2].location = 2;
+    attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+    attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+    return attributeDescriptions;
+}
 
-        return attributeDescriptions;
-    }
-
-    bool operator==(const Vertex &other) const
-    {
-        return pos == other.pos && color == other.color && texCoord == other.texCoord;
-    }
-};
 
 struct UniformBufferObject
 {
@@ -160,6 +147,9 @@ struct UniformBufferObject
     glm::mat4 view;
     glm::mat4 proj;
 };
+
+#define LOAD_MDL 1
+#define TEST_MDL 0
 
 class HelloTriangleApplication
 {
@@ -171,10 +161,17 @@ public:
 
     void run()
     {
+#if TEST_MDL
+        MDLReader r;
+        r.LoadMDL("", vertices, indices);
+        std::cin.ignore();
+#else
+        std::cin.ignore();
         initWindow();
         initVulkan();
         mainLoop();
         cleanup();
+#endif
     }
 
 private:
@@ -266,6 +263,14 @@ private:
 
     void loadModel()
     {
+#if LOAD_MDL
+        MDLReader r;
+        if (!r.LoadMDL("", vertices, indices))
+            throw std::runtime_error("Failed to load the MDL!");
+
+        std::cout << "Vertices: " << vertices.size() << std::endl;
+        std::cout << "Indices: " << indices.size() << std::endl;
+#else
         tinyobj::attrib_t attrib;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
@@ -300,6 +305,7 @@ private:
                 indices.push_back(indices.size());
             }
         }
+#endif
     }
 
     void createDepthResources()
