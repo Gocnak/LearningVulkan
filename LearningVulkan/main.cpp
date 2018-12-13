@@ -24,8 +24,17 @@
 #define WIDTH 800
 #define HEIGHT 600
 
-#define MODEL_PATH "models/chalet.obj"
+#define LOAD_MDL 1 // TODO: convert to command line param
+#define TEST_MDL 0 // TODO: convert to command line param
+
+
+#if LOAD_MDL
+#define TEXTURE_PATH "textures/smg2.png"
+#define MODEL_PATH "models/mdl/smg2"
+#else
 #define TEXTURE_PATH "textures/chalet.jpg"
+#define MODEL_PATH "models/chalet.obj"
+#endif
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
@@ -148,9 +157,6 @@ struct UniformBufferObject
     glm::mat4 proj;
 };
 
-#define LOAD_MDL 1
-#define TEST_MDL 0
-
 class HelloTriangleApplication
 {
 public:
@@ -166,7 +172,7 @@ public:
         r.LoadMDL("", vertices, indices);
         std::cin.ignore();
 #else
-        std::cin.ignore();
+        //std::cin.ignore();
         initWindow();
         initVulkan();
         mainLoop();
@@ -265,7 +271,7 @@ private:
     {
 #if LOAD_MDL
         MDLReader r;
-        if (!r.LoadMDL("", vertices, indices))
+        if (!r.LoadMDL(MODEL_PATH, vertices, indices))
             throw std::runtime_error("Failed to load the MDL!");
 
         std::cout << "Vertices: " << vertices.size() << std::endl;
@@ -1718,8 +1724,8 @@ private:
 
         UniformBufferObject ubo = {};
         ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
+        ubo.view = glm::lookAt(glm::vec3(100.0f, 100.0f, 100.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10000.0f);
         ubo.proj[1][1] *= -1;
 
         void* data;

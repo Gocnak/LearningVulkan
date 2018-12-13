@@ -6,12 +6,13 @@
 
 using namespace std;
 
-MDLReader::MDLReader(): vtxData(nullptr)
+MDLReader::MDLReader()
 {
 }
 
-bool MDLReader::LoadMDL(const char* pName, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
+bool MDLReader::LoadMDL(const char* pPath, std::vector<Vertex>& vertices, std::vector<uint32_t>& indices)
 {
+   m_BasePath = string(pPath);
    return ReadVVD(vertices) && ReadVTX(indices);
 }
 
@@ -19,12 +20,12 @@ bool MDLReader::ReadVTX(std::vector<uint32_t>& indices) {
     streampos size;
     bool success = false;
 
-    // TODO: use passed in name of mdl
-    ifstream file("models/mdl/v_mom_lmg.dx90.vtx", ios::in | ios::binary | ios::ate);
+    string vtxPath = m_BasePath + ".sw.vtx";
+    ifstream file(vtxPath, ios::in | ios::binary | ios::ate);
     if (file.is_open())
     {
         size = file.tellg();
-        vtxData = new unsigned char[size];
+        unsigned char *vtxData = new unsigned char[size];
         cout << "Size: " << size << endl;
         file.seekg(0, ios::beg);
         file.read((char*) vtxData, size);
@@ -49,11 +50,47 @@ bool MDLReader::ReadVTX(std::vector<uint32_t>& indices) {
                         for (int m = 0; m < mesh->numStripGroups; m++)
                         {
                             VTX::StripGroupHeader_t *stripGroup = mesh->pStripGroup(m);
-                            for (int n = 0; n < stripGroup->numIndices; n++)
+
+                            unsigned short *pIndices = new unsigned short[stripGroup->numIndices];
+                            memcpy(pIndices, stripGroup->pIndex(0), stripGroup->numIndices * sizeof(unsigned short));
+
+                            // Build the mapping from strip group vertex idx to actual mesh idx
+                            unsigned short *pGroupIndexToMeshIndex = new unsigned short[stripGroup->numVerts];
+
+                            for (int stripVertIndx = 0; stripVertIndx < stripGroup->numVerts; ++stripVertIndx)
                             {
-                                unsigned short indx = *stripGroup->pIndex(n);
-                                indices.push_back(indx);
+                                pGroupIndexToMeshIndex[stripVertIndx] = stripGroup->pVertex(stripVertIndx)->origMeshVertID;
                             }
+
+                            for (int n = 0; n < stripGroup->numStrips; n++)
+                            {
+                                VTX::StripHeader_t *strp = stripGroup->pStrip(n);
+                                if (strp->flags & VTX::StripHeaderFlags_t::STRIP_IS_TRILIST)
+                                {
+                                    for (int strpIndx = 0; strpIndx < strp->numIndices; strpIndx += 3)
+                                    {
+                                        int idx = strp->indexOffset + strpIndx;
+                                        indices.push_back(pGroupIndexToMeshIndex[pIndices[idx]]);
+                                        indices.push_back(pGroupIndexToMeshIndex[pIndices[idx + 1]]);
+                                        indices.push_back(pGroupIndexToMeshIndex[pIndices[idx + 2]]);
+                                    }
+                                }
+                                else
+                                {
+                                    assert(strp->flags & VTX::StripHeaderFlags_t::STRIP_IS_TRISTRIP);
+                                    for (int strpIndx = 0; strpIndx < strp->numIndices - 2; ++strpIndx)
+                                    {
+                                        int idx = strp->indexOffset + strpIndx;
+                                        bool ccw = (strpIndx & 0x1) == 0;
+                                        indices.push_back(pGroupIndexToMeshIndex[pIndices[idx]]);
+                                        indices.push_back(pGroupIndexToMeshIndex[pIndices[idx + 1 + ccw]]);
+                                        indices.push_back(pGroupIndexToMeshIndex[pIndices[idx + 2 - ccw]]);
+                                    }
+                                }
+                            }
+
+                            delete[] pGroupIndexToMeshIndex;
+                            delete[] pIndices;
                         }
                     }
                 }
@@ -72,12 +109,12 @@ bool MDLReader::ReadVTX(std::vector<uint32_t>& indices) {
     return success;
 }
 
-bool MDLReader::ReadVVD(std::vector<Vertex> &vertices) {
+bool MDLReader::ReadVVD(vector<Vertex> &vertices) {
     streampos size;
     bool success = false;
 
-    // TODO: use passed in name of mdl
-    ifstream file("models/mdl/v_mom_lmg.vvd", ios::in | ios::binary | ios::ate);
+    string vvdPath = m_BasePath + ".vvd";
+    ifstream file(vvdPath, ios::in | ios::binary | ios::ate);
     if (file.is_open())
     {
         size = file.tellg();
@@ -105,7 +142,7 @@ bool MDLReader::ReadVVD(std::vector<Vertex> &vertices) {
 
                 vertex.pos = {
                     valvVertex.m_posX,
-                    valvVertex.m_posY *-1.0,
+                    valvVertex.m_posY * -1.0f,
                     valvVertex.m_posZ,
                 };
 
@@ -114,14 +151,11 @@ bool MDLReader::ReadVVD(std::vector<Vertex> &vertices) {
                     valvVertex.m_texCoordV
                 };
 
-                // PrintVertex(valvVertex);
-
                 vertex.color = { 1.0f, 1.0f, 1.0f };
 
                 vertices.push_back(vertex);
             }
 
-            cout << "Read all vertices! Count: " << vvd_Vertices.size() << endl;
             success = true;
         }
         else

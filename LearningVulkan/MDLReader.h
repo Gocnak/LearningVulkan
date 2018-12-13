@@ -277,18 +277,15 @@ class MDLReader
 
 public:
     MDLReader();
-    bool LoadMDL(const char *pName, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
+    bool LoadMDL(const char *pPath, std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
 
 protected:
     bool ReadVTX(std::vector<uint32_t>& indices);
     bool ReadVVD(std::vector<Vertex> &vertices);
 
 private:
+    std::string m_BasePath;
     void PrintVertex(VVD::mstudiovertex_t &vert);
     void PrintHeader(VVD::vertexFileHeader_t &header);
     void PrintHeader(VTX::FileHeader_t &header);
-
-    std::vector<VVD::mstudiovertex_t> vvd_Vertices;
-
-    unsigned char* vtxData;
 };
