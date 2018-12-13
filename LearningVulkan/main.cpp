@@ -169,7 +169,7 @@ public:
     {
 #if TEST_MDL
         MDLReader r;
-        r.LoadMDL("", vertices, indices);
+        r.LoadMDL("models/mdl/smg2", vertices, indices);
         std::cin.ignore();
 #else
         //std::cin.ignore();

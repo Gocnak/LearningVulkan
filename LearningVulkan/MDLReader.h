@@ -10,12 +10,13 @@ typedef unsigned char byte;
 
 namespace VVD
 {
+#pragma pack(1)
     // these structures can be found in <mod folder>/src/public/studio.h
     struct vertexFileHeader_t
     {
         int	id;				// MODEL_VERTEX_FILE_ID
         int	version;			// MODEL_VERTEX_FILE_VERSION
-        long checksum;			// same as studiohdr_t, ensures sync
+        int checksum;			// same as studiohdr_t, ensures sync
         int	numLODs;			// num of valid lods
         int	numLODVertexes[MAX_NUM_LODS];	// num verts for desired root lod
         int	numFixups;			// num of vertexFileFixup_t
@@ -53,6 +54,7 @@ namespace VVD
         float m_texCoordU;
         float m_texCoordV;
     };
+#pragma pack()
 }
 
 // Taken from optimize.h
